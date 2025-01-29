@@ -1,11 +1,11 @@
-import { config } from "dotenv";
+import dotenv from "dotenv";
 import { connectDB } from "../lib/db.js";
 import User from "../models/user.model.js";
 
-config();
+dotenv.config();
 
 const seedUsers = [
-  // Female Users
+  // Female
   {
     email: "emma.thompson@example.com",
     fullName: "Emma Thompson",
@@ -101,14 +101,27 @@ const seedUsers = [
 ];
 
 const seedDatabase = async () => {
-  try {
-    await connectDB();
-
-    await User.insertMany(seedUsers);
-    console.log("Database seeded successfully");
-  } catch (error) {
-    console.error("Error seeding database:", error);
-  }
-};
+    try {
+      await connectDB();
+  
+      // Proper format for bulkWrite()
+      await User.bulkWrite(
+        seedUsers.map((user) => ({
+          updateOne: {
+            filter: { email: user.email }, // Search by email
+            update: { $set: user }, // Update or insert user
+            upsert: true, // Insert if not found
+          },
+        }))
+      );
+  
+      console.log("Database seeded successfully");
+    } catch (error) {
+      console.error("Error seeding database:", error);
+    } finally {
+      process.exit(); // Ensure process exits after execution
+    }
+  };
+  
 
 seedDatabase();
